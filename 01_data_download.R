@@ -31,15 +31,18 @@ save(TP53_R175, file = paste0('./data/',cancer_type,'_TP53_R175','_mutect2.Rdata
 save(TP53_R248, file = paste0('./data/',cancer_type,'_TP53_R248','_mutect2.Rdata'))
 
 #Downloads clinical data
-clinical_data <- paste0("TCGA_", cancer_type, "phenotype_curated_survival_data.txt.gz")
-download.file("https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/survival%2FBRCA_survival.txt", destfile = clinical_data)
+#only select primary tumor
+clinical_data <- paste0("TCGA_", cancer_type, "phenotype_data.txt.gz")
+download.file("https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/TCGA.BRCA.sampleMap%2FBRCA_clinicalMatrix", destfile = clinical_data)
 clinical <- read.table(clinical_data,
                        header = T,
                        sep = '	',
                        quote = '',
                        fill = TRUE)
-save(clinical, file = paste0('./data/',cancer_type,'_clinical','.Rdata'))
+primary.tumor <- clinical[grep('(?i)primary', clinical$sample_type),]
+save(primary.tumor, file = paste0('./data/',cancer_type,'_pheno_primary_tumor','.Rdata'))
 
+  
 
 #Downloads TCGA dataset
 HiSeq_data <- paste0("TCGA_", cancer_type, "IlluminaHiSeq_pancan_normalized.txt.gz")
@@ -49,19 +52,34 @@ HiSeq <- read.table(HiSeq_data,
                     sep = '	',
                     quote = '',
                     fill = TRUE)
-save(HiSeq, file = paste0('./data/',cancer_type,'_HiSeqcounts_all','.Rdata'))
+HiSeq <- rename_with(HiSeq, ~ gsub(".", "-", .x, fixed = TRUE), .cols = 2:last_col())
+HiSeq_for_primary_tumor <- select(HiSeq, c(sample,which(colnames(HiSeq) %in% primary.tumor$sampleID)))
+save(HiSeq_for_primary_tumor, file = paste0('./data/',cancer_type,'_HiSeqcounts_all','.Rdata'))
 
 #select expression profiles of genes of interest &
 #patients contains TP53 mutation
-
+#used SFRS2 instead of SRSF2 for search
 gene.of.interest <- c("BRCA1", "SRSF2", "ATF4", "SLC7A11",
                       "ZFAF1", "WT1", "PBRM1", "BAP1",
                       "CDH1", "CIC", "RB1", "STK11", "SMAD4", 
-                      "NF1", "TP53")
+                      "NF1", "TP53",'SFRS2')
+#gene.of.interest <- c('PR264', 'SC-35', 'SC35', 'SFRS2', 'SFRS2A','SRp30b')
 
 TP53_sample <- unique(TP53_all_mut$sample)
-HiSeq_selected_gene <- filter(HiSeq, sample %in% gene.of.interest); View(HiSeq_selected_gene)
-HiSeq_selected_gene <- rename_with(HiSeq_selected_gene, ~ gsub(".", "-", .x, fixed = TRUE))
+HiSeq_selected_gene <- filter(HiSeq_for_primary_tumor, sample %in% gene.of.interest); View(HiSeq_selected_gene)
 
-HiSeq_selected_patients_withTP53mut <- select(HiSeq_selected_gene, which(colnames(HiSeq_selected_gene) %in% TP53_sample))
+HiSeq_selected_patients_withTP53mut <- select(HiSeq_selected_gene, c(sample, which(colnames(HiSeq_selected_gene) %in% TP53_sample)))
+HiSeq_selected_patients_woTP53mut <- select(HiSeq_selected_gene, c(sample, !which(colnames(HiSeq_selected_gene) %in% TP53_sample)))
 save(HiSeq_selected_patients_withTP53mut, file = paste0('./data/',cancer_type,'_HiSeqcounts_w_TP53_GOI','.Rdata'))
+save(HiSeq_selected_patients_woTP53mut, file = paste0('./data/',cancer_type,'_HiSeqcounts_wo_TP53_GOI','.Rdata'))
+
+HiSeq_selected_patients_R175 <- select(HiSeq_selected_patients_withTP53mut, 
+                                       c(sample, which(colnames(HiSeq_selected_patients_withTP53mut) %in% TP53_R175$sample)))
+HiSeq_selected_patients_R248 <- select(HiSeq_selected_patients_withTP53mut, 
+                                       c(sample, which(colnames(HiSeq_selected_patients_withTP53mut) %in% TP53_R248$sample)))
+HiSeq_selected_patients_R273 <- select(HiSeq_selected_patients_withTP53mut, 
+                                       c(sample, which(colnames(HiSeq_selected_patients_withTP53mut) %in% TP53_R273$sample)))
+save(HiSeq_selected_patients_R175, file = paste0('./data/',cancer_type,'_HiSeqcounts_R175','.Rdata'))
+save(HiSeq_selected_patients_R248, file = paste0('./data/',cancer_type,'_HiSeqcounts_R248','.Rdata'))
+save(HiSeq_selected_patients_R273, file = paste0('./data/',cancer_type,'_HiSeqcounts_R273','.Rdata'))
+
