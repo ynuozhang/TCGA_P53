@@ -45,8 +45,10 @@ save(primary.tumor, file = paste0('./data/',cancer_type,'_pheno_primary_tumor','
   
 
 #Downloads TCGA dataset
-HiSeq_data <- paste0("TCGA_", cancer_type, "IlluminaHiSeq_pancan_normalized.txt.gz")
-download.file("https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/TCGA.BRCA.sampleMap%2FHiSeqV2_PANCAN.gz", destfile = HiSeq_data)
+#HiSeq_data <- paste0("TCGA_", cancer_type, "IlluminaHiSeq_pancan_normalized.txt.gz")
+HiSeq_data <- paste0("TCGA_", cancer_type, "IlluminaHiSeq_pancan.txt.gz")
+#download.file("https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/TCGA.BRCA.sampleMap%2FHiSeqV2_PANCAN.gz", destfile = HiSeq_data)
+download.file("https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/TCGA.BRCA.sampleMap%2FHiSeqV2.gz", destfile = HiSeq_data)
 HiSeq <- read.table(HiSeq_data,
                     header = T,
                     sep = '	',
@@ -54,7 +56,7 @@ HiSeq <- read.table(HiSeq_data,
                     fill = TRUE)
 HiSeq <- rename_with(HiSeq, ~ gsub(".", "-", .x, fixed = TRUE), .cols = 2:last_col())
 HiSeq_for_primary_tumor <- select(HiSeq, c(sample,which(colnames(HiSeq) %in% primary.tumor$sampleID)))
-save(HiSeq_for_primary_tumor, file = paste0('./data/',cancer_type,'_HiSeqcounts_all','.Rdata'))
+save(HiSeq_for_primary_tumor, file = paste0('./data/',cancer_type,'_HiSeqcounts_all_not_normalized','.Rdata'))
 
 #select expression profiles of genes of interest &
 #patients contains TP53 mutation
