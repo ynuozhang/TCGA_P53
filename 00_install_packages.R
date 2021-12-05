@@ -33,3 +33,4 @@ lapply( bioPackages,
         }
 )
 dir.create("data")
+dir.create("figs")
