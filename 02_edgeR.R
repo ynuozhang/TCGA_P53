@@ -4,23 +4,45 @@ library(stringr)
 library(tidyr)
 
 # FPKM trace back
-load("D:/TCGA_P53/data/BRCA_HiSeqcounts_w_TP53.Rdata")
-load("D:/TCGA_P53/data/BRCA_HiSeqcounts_wo_TP53.Rdata")
+#load("D:/TCGA_P53/data/BRCA_HiSeqcounts_w_TP53.Rdata")
+#load("D:/TCGA_P53/data/BRCA_HiSeqcounts_wo_TP53.Rdata")
+load("D:/Github/TCGA_P53/data/BRCA_HiSeqcounts.Rdata")
 cancer_type = 'BRCA'
 #Group set 1 and 2
-#combine groups: patients with TP53 and patients wo TP53
-Group1and2 <- transform(merge(HiSeq_patients_woTP53mut, HiSeq_patients_withTP53mut, by=0, all=T),
-                        row.names = Row.names, Row.names = NULL)
-Group1and2.label <- c(rep("without.TP53",times=dim(HiSeq_patients_woTP53mut)[2]),
-                      rep("with.TP53",times=dim(HiSeq_patients_withTP53mut)[2]))
-Group1and2.label = factor(Group1and2.label,
-                          levels = c("without.TP53","with.TP53"))
-Group1and2.input <- DGEList(counts=Group1and2, group=Group1and2.label)
+#combine all groups
 
-Group1and2.input.copy <- Group1and2.input
+Group.all <- Reduce(function(a,b){
+  temp <- merge(a,b, all=TRUE, by = 0)
+  row.names(temp) <- temp[,'Row.names']
+  temp[,!names(temp) %in% 'Row.names']
+}, list(HiSeq_patients_woTP53mut, HiSeq_patients_withTP53mut, HiSeq_patients_withMultipleTP53mut,
+        HiSeq_patients_R175, HiSeq_patients_R248, HiSeq_patients_R273))
+
+Group.all.label <- c(rep("TP53 WT",times=dim(HiSeq_patients_woTP53mut)[2]),
+                     rep("TP53 mutant",times=dim(HiSeq_patients_withTP53mut)[2]), 
+                     rep("TP53 multiple mutant",times=dim(HiSeq_patients_withMultipleTP53mut)[2]),
+                     rep("TP53 R175",times=dim(HiSeq_patients_R175)[2]),
+                     rep("TP53 R248",times=dim(HiSeq_patients_R248)[2]),
+                     rep("TP53 R273",times=dim(HiSeq_patients_R273)[2]))
+
+Group.all.label = factor(Group.all.label,
+                         levels = c("TP53 WT","TP53 mutant","TP53 multiple mutant",
+                                    "TP53 R175", "TP53 R248","TP53 R273"))
+Group.all.input <- DGEList(counts=Group.all, group=Group.all.label)
+
+#Group1and2.label <- c(rep("TP53 WT",times=dim(HiSeq_patients_woTP53mut)[2]),
+                      #rep("TP53 mutant",times=dim(HiSeq_patients_withTP53mut)[2]))
+#Group1and2.label = factor(Group1and2.label,
+                          #levels = c("TP53 WT","TP53 mutant"))
+#Group1and2.input <- DGEList(counts=Group1and2, group=Group1and2.label)
+
+#Group1and2.input.copy <- Group1and2.input
 #filtering for less representative genes
 #min(apply(Group1and2.input.copy$counts, 2, sum))
 #max(apply(Group1and2.input.copy$counts, 2, sum))
+
+
+
 keep <- rowSums(cpm(Group1and2.input.copy)>100) >= 266
 Group1and2.input.copy <- Group1and2.input.copy[keep,]
 Group1and2.input.copy$samples$lib.size <- colSums(Group1and2.input.copy$counts)
@@ -55,6 +77,34 @@ results <- glmLRT(fit, contrast = c(-1, 1))
 nredgeR <- topTags(results, n = nrow(d2))
 nredgeR <- as.data.frame(nredgeR)
 colnames(nredgeR)[4] <- c("P.Value")
+
+#data.dir <- file.path('./TCGA_P53')
+source('00_drawing_function.R')
+
+draw_heatmap(V.method = nredgeR, gene.dataset = Group1and2, 
+             annotation.class = factor(Group1and2.label), name = 'BRCA_edgeR')
+
+#check if gene of interest is within top100
+gene.of.interest <- c("BRCA1", "SRSF2", "ATF4", "SLC7A11",
+                      "ZFAF1", "WT1", "PBRM1", "BAP1",
+                      "CDH1", "CIC", "RB1", "STK11", "SMAD4", 
+                      "NF1", "TP53",'SFRS2')
+look.for.gene.of.interest <- filter(HiSeq_for_primary_tumor, rownames(choose_matrix) %in% gene.of.interest)
+if (look.for.gene.of.interest) {
+  print('Gene of interest is within top100 regulated gene.')
+} else {
+  print('Gene of interest is within top100 regulated gene.
+        Check if G.O.I is within other high expression gene')
+  another.check <- nredgeR[rownames(nredgeR) %in% gene.of.interest]
+  if (another.check) {
+    print(another.check)
+  } else {
+    print('G.O.I is not within high epression gene. They are filtered before performing edgeR.')
+  }
+}
+  
+
+
 
 ###################
 library(ComplexHeatmap)

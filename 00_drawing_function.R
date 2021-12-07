@@ -1,26 +1,52 @@
-# function to draw heatmap and volcano plot
+# function to draw heatmap and volcano plots
 
-draw_heatmap <- function(V.method, type, gene.dataset){
-  library("pheatmap")
+top100_heatmap <- function(V.method, gene.dataset, annotation.class){
+  library(ComplexHeatmap)
+  library(circlize)
   
-  nrDEG_Z = nrDEG[order(nrDEG$logFC), ]
-  nrDEG_F = nrDEG[order(-nrDEG$logFC), ]
-  choose_gene = c(rownames(nrDEG_Z)[1:50], rownames(nrDEG_F)[1:50])
-  choose_matrix = gene.dataset[choose_gene,]
-  choose_matrix = t(scale(t(choose_matrix)))
+  edgeR.filter <- filter(V.method, abs(V.method$logFC) >=1
+                         & V.method$P.Value < 0.05)
+  nrDEG_Z = edgeR.filter[order(edgeR.filter$logFC), ]
+  nrDEG_F = edgeR.filter[order(-edgeR.filter$logFC), ]
+  choose_gene_top100 = c(rownames(nrDEG_Z)[1:50], rownames(nrDEG_F)[1:50])
+  choose_matrix_top100 = gene.dataset[choose_gene_top100,]
+  choose_matrix_top100 = log2(choose_matrix_top100 + 1)
+  choose_matrix_top100 = t(scale(t(choose_matrix_top100)))
+  choose_matrix_top100[choose_matrix_top100 > 2] = 2
+  choose_matrix_top100[choose_matrix_top100 < -2] = -2
   
-  choose_matrix[choose_matrix > 2] = 2
-  choose_matrix[choose_matrix < -2] = -2
+  col_fun = colorRamp2(c(-2, 0, 2), c("#2fa1dd", "white", "#f87669"))
+  top_annotation = HeatmapAnnotation(
+    cluster = anno_block(gp = gpar(fill = c("#2fa1dd", "#f87669")),
+                         labels = unique(annotation.class),
+                         labels_gp = gpar(col = "black", fontsize = 12)))
   
-  annotation_col = data.frame( CellType = factor( group_list ) )
-  rownames( annotation_col ) = colnames( gene.dataset )
-  filename <- paste('./fig/', type, '_heatmap_top100_logFC.png',
-                    sep = "", collapse = NULL)
-  pheatmap( fontsize = 6, choose_matrix, annotation_col = annotation_col, 
-            show_rownames = T, show_colnames = F,
-            annotation_legend = T, cluster_cols = T, 
-            filename = filename)
+  fig_top100 <-  Heatmap(choose_matrix_top100, col = col_fun, top_annotation = top_annotation,
+                  column_split = annotation.class, show_heatmap_legend = F,
+                  show_row_names = T, show_column_names = F,column_title = 'top100', 
+                  cluster_columns = F, cluster_column_slices = T, row_names_gp = gpar(fontsize = 6))
+  
+  return(fig_top100)
 }
+
+draw_heatmap <- function(choose_matrix, annotation.class){
+  library(ComplexHeatmap)
+  library(circlize)
+  
+  col_fun = colorRamp2(c(-2, 0, 2), c("#2fa1dd", "white", "#f87669"))
+  top_annotation = HeatmapAnnotation(
+    cluster = anno_block(gp = gpar(fill = c("#2fa1dd", "#f87669")),
+                         labels = unique(annotation.class),
+                         labels_gp = gpar(col = "black", fontsize = 12)))
+  
+  fig_all <-  Heatmap(choose_matrix, col = col_fun, top_annotation = top_annotation,
+                      show_heatmap_legend = F, column_split = annotation.class,
+                      show_row_names = T, show_column_names = F,column_title = 'All_significant',
+                      cluster_columns = F, cluster_column_slices = T, row_names_gp = gpar(fontsize = 1))
+  
+  return(fig_all)
+}
+
 
 draw_volcano <- function(nrDEG, type){
   library( "ggplot2" )
