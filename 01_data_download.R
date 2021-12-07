@@ -1,16 +1,5 @@
 library(dplyr)
 
-gzfile <- "TCGA-BRCA.mutect2_MC3_non_silent.txt.gz"
-download.file("https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/mc3_gene_level%2FBRCA_mc3_gene_level.txt.gz", destfile = gzfile)
-mutype_file <- read.table( gzfile,
-                           header = T,
-                           sep = '	',
-                           quote = '', 
-                           fill = TRUE)
-TP53 <- mutype_file[mutype_file$sample == 'tp53' | mutype_file$sample == 'TP53',]
-TP53 <- na.omit(TP53)
-TP53 <- TP53[, colSums(TP53 != 0) > 0]
-
 cancer_type = 'BRCA'
 # Downloads mutation categorical data
 mc3 <- paste0("TCGA_", cancer_type, "_mutect2_MC3_public.txt.gz")
@@ -22,14 +11,29 @@ mutype_file_detail <- read.table( mc3,
                                   fill = TRUE)
 
 TP53_all_mut <- mutype_file_detail[mutype_file_detail$gene == 'tp53' | mutype_file_detail$gene == 'TP53', ]
-TP53_R273 <- TP53_all_mut[grep('R273', TP53_all_mut$Amino_Acid_Change), ];dim(TP53_R273);View(TP53_R273)
-TP53_R175 <- TP53_all_mut[grep('R175', TP53_all_mut$Amino_Acid_Change), ];dim(TP53_R175);View(TP53_R175)
-TP53_R248 <- TP53_all_mut[grep('R248', TP53_all_mut$Amino_Acid_Change), ];dim(TP53_R248);View(TP53_R248)
-save(TP53_all_mut, file = paste0('./data/',cancer_type,'_TP53_all','_mutect2.Rdata'))
-save(TP53_R273, file = paste0('./data/',cancer_type,'_TP53_R273','_mutect2.Rdata'))
-save(TP53_R175, file = paste0('./data/',cancer_type,'_TP53_R175','_mutect2.Rdata'))
-save(TP53_R248, file = paste0('./data/',cancer_type,'_TP53_R248','_mutect2.Rdata'))
+TP53_R273 <- TP53_all_mut[grep('R273', TP53_all_mut$Amino_Acid_Change), ];dim(TP53_R273)
+TP53_R175 <- TP53_all_mut[grep('R175', TP53_all_mut$Amino_Acid_Change), ];dim(TP53_R175)
+TP53_R248 <- TP53_all_mut[grep('R248', TP53_all_mut$Amino_Acid_Change), ];dim(TP53_R248)
 
+#check if any sample may contain over 1 TP53 mutation
+n_occur_TP53 <- data.frame(table(TP53_all_mut$sample))
+n_occur_TP53_sample <- n_occur_TP53[n_occur_TP53$Freq > 1,]
+
+if (length(n_occur_TP53_sample) != 0) {
+  sample.with.multiple.TP53.mut <- n_occur_TP53_sample$Var1
+  TP53_all_mut <- mutate(TP53_all_mut, category = case_when(
+    TP53_all_mut$sample %in% sample.with.multiple.TP53.mut ~ 'Multiple_Mut',
+    TRUE ~ 'Single_Mut'))
+  print(paste0(length(sample.with.multiple.TP53.mut), ' samples contains more than 1 TP53 mutation'))
+  verbose.or.not <- readline(prompt="check these samples in detail (only accept y/n): ")
+  if (verbose.or.not == 'y'){
+    print(n_occur_TP53_sample)
+  } else{
+    invisible()
+  }
+} else {
+  print('no sample contains more than 1 TP53 mutation')
+}
 #Downloads clinical data
 #only select primary tumor
 clinical_data <- paste0("TCGA_", cancer_type, "phenotype_data.txt.gz")
@@ -54,8 +58,13 @@ HiSeq <- read.table(HiSeq_data,
                     sep = '	',
                     quote = '',
                     fill = TRUE)
-HiSeq <- rename_with(HiSeq, ~ gsub(".", "-", .x, fixed = TRUE), .cols = 2:last_col())
-HiSeq_for_primary_tumor <- select(HiSeq, c(sample,which(colnames(HiSeq) %in% primary.tumor$sampleID)))
+rownames(HiSeq) <- HiSeq[,1]
+HiSeq <- HiSeq[,-1]
+
+HiSeq <- round(((2**HiSeq) - 1), 0)
+
+HiSeq <- rename_with(HiSeq, ~ gsub(".", "-", .x, fixed = TRUE))
+HiSeq_for_primary_tumor <- select(HiSeq, which(colnames(HiSeq) %in% primary.tumor$sampleID))
 save(HiSeq_for_primary_tumor, file = paste0('./data/',cancer_type,'_HiSeqcounts_all_not_normalized','.Rdata'))
 
 #select expression profiles of genes of interest &
@@ -67,21 +76,29 @@ gene.of.interest <- c("BRCA1", "SRSF2", "ATF4", "SLC7A11",
                       "NF1", "TP53",'SFRS2')
 #gene.of.interest <- c('PR264', 'SC-35', 'SC35', 'SFRS2', 'SFRS2A','SRp30b')
 
-TP53_sample <- unique(TP53_all_mut$sample)
-HiSeq_selected_gene <- filter(HiSeq_for_primary_tumor, sample %in% gene.of.interest); View(HiSeq_selected_gene)
+HiSeq_selected_gene <- filter(HiSeq_for_primary_tumor, rownames(HiSeq_for_primary_tumor) %in% gene.of.interest); View(HiSeq_selected_gene)
 
-HiSeq_selected_patients_withTP53mut <- select(HiSeq_selected_gene, c(sample, which(colnames(HiSeq_selected_gene) %in% TP53_sample)))
-HiSeq_selected_patients_woTP53mut <- select(HiSeq_selected_gene, c(sample, !which(colnames(HiSeq_selected_gene) %in% TP53_sample)))
-save(HiSeq_selected_patients_withTP53mut, file = paste0('./data/',cancer_type,'_HiSeqcounts_w_TP53_GOI','.Rdata'))
-save(HiSeq_selected_patients_woTP53mut, file = paste0('./data/',cancer_type,'_HiSeqcounts_wo_TP53_GOI','.Rdata'))
+TP53_sample <- filter(TP53_all_mut, category == 'Single_Mut')$sample
+TP53_multi_sample <- filter(TP53_all_mut, category == 'Multiple_Mut')$sample
 
-HiSeq_selected_patients_R175 <- select(HiSeq_selected_patients_withTP53mut, 
-                                       c(sample, which(colnames(HiSeq_selected_patients_withTP53mut) %in% TP53_R175$sample)))
-HiSeq_selected_patients_R248 <- select(HiSeq_selected_patients_withTP53mut, 
-                                       c(sample, which(colnames(HiSeq_selected_patients_withTP53mut) %in% TP53_R248$sample)))
-HiSeq_selected_patients_R273 <- select(HiSeq_selected_patients_withTP53mut, 
-                                       c(sample, which(colnames(HiSeq_selected_patients_withTP53mut) %in% TP53_R273$sample)))
-save(HiSeq_selected_patients_R175, file = paste0('./data/',cancer_type,'_HiSeqcounts_R175','.Rdata'))
-save(HiSeq_selected_patients_R248, file = paste0('./data/',cancer_type,'_HiSeqcounts_R248','.Rdata'))
-save(HiSeq_selected_patients_R273, file = paste0('./data/',cancer_type,'_HiSeqcounts_R273','.Rdata'))
+HiSeq_selected_patients_withTP53mut <- select(HiSeq_selected_gene, which(colnames(HiSeq_selected_gene) %in% TP53_sample))
+HiSeq_selected_patients_withMultipleTP53mut <- select(HiSeq_selected_gene, 
+                                             which(colnames(HiSeq_selected_gene) %in% TP53_multi_sample))
+HiSeq_selected_patients_woTP53mut <- select(HiSeq_selected_gene, which(!(colnames(HiSeq_selected_gene) %in% TP53_sample)
+                                                                  & 
+                                                                    !(colnames(HiSeq_selected_gene) %in% TP53_multi_sample)))
+HiSeq_selected_patients_R175 <- select(HiSeq_selected_gene, 
+                              which(colnames(HiSeq_selected_gene) %in% TP53_R175$sample))
+HiSeq_selected_patients_R248 <- select(HiSeq_selected_gene, 
+                              which(colnames(HiSeq_selected_gene) %in% TP53_R248$sample))
+HiSeq_selected_patients_R273 <- select(HiSeq_selected_gene, 
+                              which(colnames(HiSeq_selected_gene) %in% TP53_R273$sample))
+HiSeq_selected_patients_R <- select(HiSeq_selected_gene, 
+                           which((colnames(HiSeq_selected_gene) %in% TP53_R175$sample) | 
+                                   (colnames(HiSeq_selected_gene) %in% TP53_R248$sample) |
+                                   (colnames(HiSeq_selected_gene) %in% TP53_R273$sample)))
+save(HiSeq_selected_patients_withTP53mut, HiSeq_selected_patients_withMultipleTP53mut, HiSeq_selected_patients_woTP53mut,
+     HiSeq_selected_patients_R175,HiSeq_selected_patients_R248,HiSeq_selected_patients_R273,HiSeq_selected_patients_R,
+     file = paste0('./data/','Step1_selectedgene','_HiSeqcounts','.Rdata'))
+
 
