@@ -48,35 +48,57 @@ draw_heatmap <- function(choose_matrix, annotation.class){
 }
 
 
-draw_volcano <- function(nrDEG, type){
-  library( "ggplot2" )
-  logFC_cutoff <- with( nrDEG, mean( abs( logFC ) ) + 2 * sd( abs( logFC ) ) )
+draw_kegg <- function(gene_up, gene_down, gene_all, title) {
+  library(ggplot2)
+  library(clusterProfiler)
+  library(org.Hs.eg.db)
+  kk.up <- enrichKEGG(gene =  gene_up,
+                      organism = 'hsa',
+                      pvalueCutoff  =  0.8,
+                      qvalueCutoff  =  0.8,
+                      universe = gene_all)
   
-  nrDEG$change = as.factor( ifelse( 
-    nrDEG$P.Value < 0.01 & abs(nrDEG$logFC) > logFC_cutoff,
-    ifelse( nrDEG$logFC > logFC_cutoff, 'UP', 'DOWN' ), 'NOT' ) )
-  nrDEGfile <- paste('./data/', type, '_nrDEG_by_logFC.Rdata',
-                     sep = "", collapse = NULL)
-  save( nrDEG, file = nrDEGfile )
+  kk.down <- enrichKEGG(gene =  gene_down,
+                        organism = 'hsa',
+                        pvalueCutoff  =  0.8,
+                        qvalueCutoff  =  0.8,
+                        universe = gene_all)
   
-  this_tile <- paste0( 
-    'Cutoff for logFC is ', round( logFC_cutoff, 3 ),
-    '
-The number of up gene is ', nrow(nrDEG[ nrDEG$change == 'UP', ] ),
-    '
-The number of down gene is ', nrow(nrDEG[ nrDEG$change == 'DOWN', ] ) )
+  kegg_down_dt <- as.data.frame( kk.down )
+  kegg_up_dt <- as.data.frame( kk.up )
+  down_kegg <- kegg_down_dt[ kegg_down_dt$pvalue < 0.05, ]
+  up_kegg <- kegg_up_dt[ kegg_up_dt$pvalue < 0.05, ]
   
-  volcano = ggplot(data = nrDEG, 
-                   aes( x = logFC, y = -log10(P.Value), color = change)) +
-    geom_point( alpha = 0.4, size = 1.75 ) +
-    theme_set( theme_set( theme_bw( base_size = 15 ) ) ) +
-    xlab( "log2 fold change" ) + ylab( "-log10 p-value" ) +
-    ggtitle( this_tile ) + 
-    theme( plot.title = element_text( size = 15, hjust = 0.5 )) +
-    scale_colour_manual( values = c('blue','black','red') )
-  print( volcano )
-  filename <- paste('./fig/', type, '_volcano_logFC.png',
-                    sep = "", collapse = NULL)
-  ggsave( volcano, filename = filename )
-  dev.off()
+  
+  if (dim(up_kegg)[1] == 0){
+    print('No up regulated gene was enriched.')
+    down_kegg$group = -1
+    dat <- down_kegg
+  } else if (dim(down_kegg)[1] == 0) {
+    print('No down regulated gene was enriched.')
+    up_kegg$group = 1
+    dat = up_kegg
+  } else {
+    up_kegg$group = 1
+    down_kegg$group = -1
+    dat <- rbind(up_kegg, down_kegg)
+  }
+  
+  dat$pvalue = -log10(dat$pvalue)
+  dat$pvalue = dat$pvalue * dat$group
+  dat = dat[ order(dat$pvalue, decreasing = F), ]
+  
+  g_kegg <- ggplot(dat,
+                   aes(x = reorder(Description, order(pvalue, decreasing=F)), 
+                       y = pvalue, fill = group)) + 
+    geom_bar(stat = "identity") +
+    scale_fill_gradient( low = "#2fa1dd", high = "#f87669", guide = 'none' ) +
+    scale_x_discrete( name = "Pathway names" ) +
+    scale_y_continuous( name = "log10P-value" ) +
+    coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
+                                      text = element_text(size=7)) +
+    ggtitle(title)
+  
+  filename <- paste('./figs/kegg_', gsub("[\n]", "", title), '.png', sep = "", collapse = NULL)
+  ggsave(g_kegg, filename = filename)
 }
