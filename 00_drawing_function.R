@@ -1,4 +1,4 @@
-# function to draw heatmap and volcano plots
+# function to draw heatmap and kegg plots
 
 top100_heatmap <- function(V.method, gene.dataset, annotation.class){
   library(ComplexHeatmap)
@@ -88,17 +88,49 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
   dat$pvalue = dat$pvalue * dat$group
   dat = dat[ order(dat$pvalue, decreasing = F), ]
   
-  g_kegg <- ggplot(dat,
-                   aes(x = reorder(Description, order(pvalue, decreasing=F)), 
-                       y = pvalue, fill = group)) + 
-    geom_bar(stat = "identity") +
-    scale_fill_gradient( low = "#2fa1dd", high = "#f87669", guide = 'none' ) +
-    scale_x_discrete( name = "Pathway names" ) +
-    scale_y_continuous( name = "log10P-value" ) +
-    coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
-                                      text = element_text(size=7)) +
-    ggtitle(title)
+  if (length(unique(dat$group)) == 1){
+    if (unique(dat$group) == 1) {
+      g_kegg <- ggplot(dat,
+                       aes(x = reorder(Description, order(pvalue, decreasing=F)), 
+                           y = pvalue, fill = group)) + 
+        geom_bar(stat = "identity") +
+        scale_fill_gradient( na.value = "#f87669", guide = 'none') +
+        scale_x_discrete( name = "Pathway names" ) +
+        scale_y_continuous( name = "log10P-value" ) +
+        coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
+                                          text = element_text(size=7)) +
+        ggtitle(title)
+    } else {
+      g_kegg <- ggplot(dat,
+                       aes(x = reorder(Description, order(pvalue, decreasing=F)), 
+                           y = pvalue, fill = group)) + 
+        geom_bar(stat = "identity") +
+        scale_fill_gradient( na.value = "#2fa1dd", guide = 'none') +
+        scale_x_discrete( name = "Pathway names" ) +
+        scale_y_continuous( name = "log10P-value" ) +
+        coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
+                                          text = element_text(size=7)) +
+        ggtitle(title)
+      
+    } }else {
+      g_kegg <- ggplot(dat,
+                       aes(x = reorder(Description, order(pvalue, decreasing=F)), 
+                           y = pvalue, fill = group)) + 
+        geom_bar(stat = "identity") +
+        scale_fill_gradient( low = "#2fa1dd", high = "#f87669", guide = 'none' ) +
+        scale_x_discrete( name = "Pathway names" ) +
+        scale_y_continuous( name = "log10P-value" ) +
+        coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
+                                          text = element_text(size=7)) +
+        ggtitle(title)
+    }
+  
+  
   
   filename <- paste('./figs/kegg_', gsub("[\n]", "", title), '.png', sep = "", collapse = NULL)
-  ggsave(g_kegg, filename = filename)
+  ggsave(g_kegg, filename = filename, height = 1181 , width = 1206, units = "px")
+  return(g_kegg)
 }
+
+
+
