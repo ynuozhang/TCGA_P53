@@ -378,14 +378,16 @@ gene.of.interest <- c("BRCA1", "SRSF2", "ATF4", "SLC7A11",
                       "ZFAF1", "WT1", "PBRM1", "BAP1",
                       "CDH1", "CIC", "RB1", "STK11", "SMAD4", 
                       "NF1", "TP53",'SFRS2')
-look.for.gene.of.interest <- filter(HiSeq_for_primary_tumor, rownames(Group1and2.choose_matrix) %in% gene.of.interest)
-if (look.for.gene.of.interest) {
+choose_matrix_top100 <- as.data.frame(choose_matrix_top100)
+look.for.gene.of.interest <- filter(choose_matrix_top100, rownames(choose_matrix_top100) %in% gene.of.interest)
+if (dim(look.for.gene.of.interest)[1] != 0) {
   print('Gene of interest is within top100 regulated gene.')
+  View(look.for.gene.of.interest)
 } else {
-  print('Gene of interest is within top100 regulated gene.
+  print('Gene of interest is not within top100 regulated gene.
         Check if G.O.I is within other high expression gene')
-  another.check <- Group1and2.edgeR[rownames(Group1and2.edgeR) %in% gene.of.interest]
-  if (another.check) {
+  another.check <- Group1and2.edgeR.filter[rownames(Group1and2.edgeR.filter) %in% gene.of.interest,]
+  if (dim(look.for.gene.of.interest)[1] != 0) {
     print(another.check)
   } else {
     print('G.O.I is not within high epression gene. They are filtered before performing edgeR.')
@@ -397,12 +399,12 @@ if (look.for.gene.of.interest) {
 
 ###################
 
-edgeR.filter <- filter(Group1and2.edgeR.filter, abs(Group1and2.edgeR.filter$logFC) >=1
-                       & Group1and2.edgeR.filter$P.Value < 0.05)
+edgeR.filter <- filter(Group1and5.edgeR.filter, abs(Group1and5.edgeR.filter$logFC) >=1
+                       & Group1and5.edgeR.filter$P.Value < 0.05)
 nrDEG_Z = edgeR.filter[order(edgeR.filter$logFC), ]
 nrDEG_F = edgeR.filter[order(-edgeR.filter$logFC), ]
 choose_gene_top100 = c(rownames(nrDEG_Z)[1:50], rownames(nrDEG_F)[1:50])
-choose_matrix_top100 = Group1and2[choose_gene_top100,]
+choose_matrix_top100 = Group1and5[choose_gene_top100,]
 choose_matrix_top100 = log2(choose_matrix_top100 + 1)
 choose_matrix_top100 = t(scale(t(choose_matrix_top100)))
 choose_matrix_top100[choose_matrix_top100 > 2] = 2
