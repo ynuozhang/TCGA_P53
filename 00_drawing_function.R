@@ -47,6 +47,23 @@ draw_heatmap <- function(choose_matrix, annotation.class){
   return(fig_all)
 }
 
+draw_selected_heatmap <- function(choose_matrix, annotation.class){
+  library(ComplexHeatmap)
+  library(circlize)
+  
+  col_fun = colorRamp2(c(-2, 0, 2), c("#2fa1dd", "white", "#f87669"))
+  top_annotation = HeatmapAnnotation(
+    cluster = anno_block(gp = gpar(fill = c("#2fa1dd", "#f87669")),
+                         labels = unique(annotation.class),
+                         labels_gp = gpar(col = "black", fontsize = 12)))
+  
+  fig_all <-  Heatmap(choose_matrix, col = col_fun, top_annotation = top_annotation,
+                      show_heatmap_legend = F, column_split = annotation.class,
+                      show_row_names = T, show_column_names = F,column_title = 'All_significant',
+                      cluster_columns = T, cluster_column_slices = F, row_names_gp = gpar(fontsize = 12))
+  
+  return(fig_all)
+}
 
 draw_kegg <- function(gene_up, gene_down, gene_all, title) {
   library(ggplot2)
