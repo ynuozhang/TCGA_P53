@@ -59,7 +59,7 @@ draw_selected_heatmap <- function(choose_matrix, annotation.class){
   
   fig_all <-  Heatmap(choose_matrix, col = col_fun, top_annotation = top_annotation,
                       show_heatmap_legend = F, column_split = annotation.class,
-                      show_row_names = T, show_column_names = F,column_title = 'All_significant',
+                      show_row_names = T, show_column_names = F,
                       cluster_columns = T, cluster_column_slices = F, row_names_gp = gpar(fontsize = 12))
   
   return(fig_all)

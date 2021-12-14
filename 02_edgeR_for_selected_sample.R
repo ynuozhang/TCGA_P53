@@ -227,35 +227,6 @@ Group1and7.edgeR <- as.data.frame(Group1and7.edgeR)
 colnames(Group1and7.edgeR)[4] <- c("P.Value")
 
 #data.dir <- file.path('./TCGA_P53')
-
-Group1and2.top100 <- top100_heatmap(V.method = Group1and2.edgeR, gene.dataset = Group1and2, 
-                                    annotation.class = factor(Group1and2.label))
-Group1and3.top100 <- top100_heatmap(V.method = Group1and3.edgeR, gene.dataset = Group1and3, 
-                                    annotation.class = factor(Group1and3.label))
-Group1and4.top100 <- top100_heatmap(V.method = Group1and4.edgeR, gene.dataset = Group1and4, 
-                                    annotation.class = factor(Group1and4.label))
-Group1and5.top100 <- top100_heatmap(V.method = Group1and5.edgeR, gene.dataset = Group1and5, 
-                                    annotation.class = factor(Group1and5.label))
-Group1and6.top100 <- top100_heatmap(V.method = Group1and6.edgeR, gene.dataset = Group1and6, 
-                                    annotation.class = factor(Group1and6.label))
-Group1and7.top100 <- top100_heatmap(V.method = Group1and7.edgeR, gene.dataset = Group1and7, 
-                                    annotation.class = factor(Group1and7.label))
-
-col_fun = colorRamp2(c(-2, 0, 2), c("#2fa1dd", "white", "#f87669"))
-lgd = Legend(col_fun = col_fun, title = "scaled log2Expression", direction = 'horizontal')
-ht_list_top100 <- Group1and2.top100  + Group1and3.top100  
-ht_list_top1002 <- Group1and4.top100   + Group1and5.top100  + Group1and6.top100 
-ht_list_top1003 <- Group1and7.top100
-
-draw(ht_list_top100, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs Different Groups", column_title_gp = gpar(fontsize = 16))
-draw(ht_list_top1002, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs Different Groups", column_title_gp = gpar(fontsize = 16))
-draw(ht_list_top1003, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs Different Groups", column_title_gp = gpar(fontsize = 16))
-
-draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
-
 #Handle data Group1and2 ================================================================
 Group1and2.edgeR.filter <- Group1and2.edgeR
 print(length(rownames(Group1and2.edgeR.filter)))
