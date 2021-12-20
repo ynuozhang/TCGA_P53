@@ -87,14 +87,17 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
   up_kegg <- kegg_up_dt[ kegg_up_dt$pvalue < 0.05, ]
   
   
-  if (dim(up_kegg)[1] == 0){
-    print('No up regulated gene was enriched.')
+  if (dim(up_kegg)[1] == 0 & dim(down_kegg)[1] != 0){
+    print('No up regulated pathway was enriched.')
     down_kegg$group = -1
     dat <- down_kegg
-  } else if (dim(down_kegg)[1] == 0) {
-    print('No down regulated gene was enriched.')
+  } else if (dim(down_kegg)[1] == 0 & dim(up_kegg)[1] != 0){
+    print('No down regulated pathway was enriched.')
     up_kegg$group = 1
     dat = up_kegg
+  } else if (dim(up_kegg)[1] == 0 & dim(down_kegg)[1] == 0){
+    print('No pathways were enriched')
+    return(NULL)
   } else {
     up_kegg$group = 1
     down_kegg$group = -1
@@ -112,10 +115,9 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
                            y = pvalue, fill = group)) + 
         geom_bar(stat = "identity") +
         scale_fill_gradient( na.value = "#f87669", guide = 'none') +
-        scale_x_discrete( name = "Pathway names" ) +
         scale_y_continuous( name = "log10P-value" ) +
         coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
-                                          text = element_text(size=7)) +
+                                          text = element_text(size=7), axis.title.y=element_blank()) +
         ggtitle(title)
     } else {
       g_kegg <- ggplot(dat,
@@ -123,25 +125,22 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
                            y = pvalue, fill = group)) + 
         geom_bar(stat = "identity") +
         scale_fill_gradient( na.value = "#2fa1dd", guide = 'none') +
-        scale_x_discrete( name = "Pathway names" ) +
         scale_y_continuous( name = "log10P-value" ) +
         coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
-                                          text = element_text(size=7)) +
+                                          text = element_text(size=7), axis.title.y=element_blank()) +
         ggtitle(title)
       
-    } }else {
+    } }else if (length(unique(dat$group)) == 2) {
       g_kegg <- ggplot(dat,
                        aes(x = reorder(Description, order(pvalue, decreasing=F)), 
                            y = pvalue, fill = group)) + 
         geom_bar(stat = "identity") +
         scale_fill_gradient( low = "#2fa1dd", high = "#f87669", guide = 'none' ) +
-        scale_x_discrete( name = "Pathway names" ) +
         scale_y_continuous( name = "log10P-value" ) +
         coord_flip() + theme_bw() + theme(plot.title = element_text(hjust = 1, size=10),
-                                          text = element_text(size=7)) +
+                                          text = element_text(size=7), axis.title.y=element_blank()) +
         ggtitle(title)
-    }
-  
+    } 
   
   
   filename <- paste('./figs/kegg_', gsub("[\n]", "", title), '.png', sep = "", collapse = NULL)
@@ -149,5 +148,23 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
   return(g_kegg)
 }
 
+draw_top50_bar <- function(filtered.edgeR, top50genes, title) {
+  table.to.draw.bar <- filtered.edgeR[top50genes, c(1, 6), drop=FALSE]
+  table.to.draw.bar$genes <- rownames(table.to.draw.bar)
+  
+  g_bar <- ggplot(table.to.draw.bar,
+                  aes(x = reorder(genes, order(logFC, decreasing=F)), 
+                      y = logFC, fill = change)) + 
+    geom_bar(stat = "identity")+
+    scale_fill_manual(values = c("#2fa1dd","#f87669"),guide = 'none')+
+    scale_y_continuous( name = "logFC" )+
+    coord_flip() + theme_bw() +
+    theme(axis.title.y=element_blank(),plot.title = element_text(hjust = 0.5, size=15))+
+    ggtitle(title)
+  filename <- paste('./figs/top50gene_', gsub("[\n]", "", title), '.png', sep = "", collapse = NULL)
+  ggsave(g_bar, filename = filename)
+  return(g_bar)
+}
 
-
+  
+  

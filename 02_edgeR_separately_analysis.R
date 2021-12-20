@@ -393,7 +393,7 @@ if (dim(look.for.gene.of.interest)[1] != 0) {
     print('G.O.I is not within high epression gene. They are filtered before performing edgeR.')
   }
 }
-  
+
 
 
 
