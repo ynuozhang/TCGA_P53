@@ -78,6 +78,8 @@ Group1and7.label <- c(rep("TP53_WT",times=dim(HiSeq_patients_woTP53mut)[2]),
                       rep("TP53_Group3",times=dim(HiSeq_patients_R)[2]))
 Group1and7.label = factor(Group1and7.label,
                           levels = c("TP53_WT","TP53_Group3"))
+save(Group1and2.label,Group1and3.label,Group1and4.label, 
+     Group1and5.label, Group1and6.label, Group1and7.label, file = 'Step2_group_label.Rdata')
 
 nrDEG_Z = Group1and2.edgeR.filter[order(Group1and2.edgeR.filter$logFC), ]
 nrDEG_F = Group1and2.edgeR.filter[order(-Group1and2.edgeR.filter$logFC), ]

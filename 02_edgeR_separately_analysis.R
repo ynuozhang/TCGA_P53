@@ -229,6 +229,7 @@ colnames(Group1and7.edgeR)[4] <- c("P.Value")
 
 #data.dir <- file.path('./TCGA_P53')
 source('00_drawing_function.R')
+
 Group1and2.top100 <- top100_heatmap(V.method = Group1and2.edgeR, gene.dataset = Group1and2, 
                                         annotation.class = factor(Group1and2.label))
 Group1and3.top100 <- top100_heatmap(V.method = Group1and3.edgeR, gene.dataset = Group1and3, 
@@ -250,14 +251,20 @@ ht_list_top1003 <- Group1and7.top100
 
 draw(ht_list_top100, auto_adjust = FALSE, 
      column_title = "BRCA WT TP53 vs Different Groups", column_title_gp = gpar(fontsize = 16))
+draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
+
 draw(ht_list_top1002, auto_adjust = FALSE, 
      column_title = "BRCA WT TP53 vs Different Groups", column_title_gp = gpar(fontsize = 16))
+draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
+
 draw(ht_list_top1003, auto_adjust = FALSE, 
      column_title = "BRCA WT TP53 vs Different Groups", column_title_gp = gpar(fontsize = 16))
 
 draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
 
 #Handle data Group1and2 ================================================================
+source('00_drawing_function.R')
+
 Group1and2.edgeR.filter <- filter(Group1and2.edgeR, abs(Group1and2.edgeR$logFC) >=1
                        & Group1and2.edgeR$P.Value < 0.05)
 print(length(rownames(Group1and2.edgeR.filter)))
@@ -275,7 +282,7 @@ Group1and2.matrix[Group1and2.matrix < -2] = -2
 Group1and2.all.heatmap <- draw_heatmap(choose_matrix = Group1and2.matrix, 
                                          annotation.class = factor(Group1and2.label))
 draw(Group1and2.all.heatmap, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs BRCA TP53 Mutant", column_title_gp = gpar(fontsize = 16))
+     column_title = "BRCA WT TP53 vs BRCA TP53 Single Mutant", column_title_gp = gpar(fontsize = 16))
 draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
 
 
@@ -297,7 +304,7 @@ Group1and7.matrix[Group1and7.matrix < -2] = -2
 Group1and7.all.heatmap <- draw_heatmap(choose_matrix = Group1and7.matrix, 
                                        annotation.class = factor(Group1and7.label))
 draw(Group1and7.all.heatmap, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs BRCA TP53 Rmutant", column_title_gp = gpar(fontsize = 16))
+     column_title = "BRCA WT TP53 vs BRCA TP53 R175+R248+R273", column_title_gp = gpar(fontsize = 16))
 draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
 
 #Handle data Group1and3===============================================================

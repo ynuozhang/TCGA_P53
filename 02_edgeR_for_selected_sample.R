@@ -235,18 +235,20 @@ Group1and2.edgeR.filter <- mutate(Group1and2.edgeR.filter,
                                     (Group1and2.edgeR.filter$P.Value < 0.05)&(Group1and2.edgeR.filter$logFC < -1) ~ 'DOWN',
                                     (Group1and2.edgeR.filter$P.Value < 0.05)&(Group1and2.edgeR.filter$logFC > 1) ~ 'UP',
                                     TRUE ~ 'NOT'))
-source('00_drawing_function.R')
+
 Group1and2.choose_gene = rownames(Group1and2.edgeR.filter)
 Group1and2.matrix = Group1and2[Group1and2.choose_gene,]
 Group1and2.matrix = log2(Group1and2.matrix + 1)
 Group1and2.matrix = t(scale(t(Group1and2.matrix)))
 Group1and2.matrix[Group1and2.matrix > 2] = 2
 Group1and2.matrix[Group1and2.matrix < -2] = -2
-
+source('00_drawing_function.R')
 Group1and2.all.heatmap <- draw_selected_heatmap(choose_matrix = Group1and2.matrix, 
                                        annotation.class = factor(Group1and2.label))
+col_fun = colorRamp2(c(-2, 0, 2), c("#2fa1dd", "white", "#f87669"))
+lgd = Legend(col_fun = col_fun, title = "scaled log2Expression", direction = 'horizontal')
 draw(Group1and2.all.heatmap, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs BRCA TP53 Mutant", column_title_gp = gpar(fontsize = 16))
+     column_title = "BRCA WT TP53 vs BRCA TP53 Single Mutation", column_title_gp = gpar(fontsize = 16))
 draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
 
 
@@ -269,7 +271,7 @@ Group1and7.matrix[Group1and7.matrix < -2] = -2
 Group1and7.all.heatmap <- draw_selected_heatmap(choose_matrix = Group1and7.matrix, 
                                        annotation.class = factor(Group1and7.label))
 draw(Group1and7.all.heatmap, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs BRCA TP53 Rmutant", column_title_gp = gpar(fontsize = 16))
+     column_title = "BRCA WT TP53 vs BRCA TP53 R173+R248+R273", column_title_gp = gpar(fontsize = 16))
 draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
 
 #Handle data Group1and3===============================================================
@@ -291,7 +293,7 @@ Group1and3.matrix[Group1and3.matrix < -2] = -2
 Group1and3.all.heatmap <- draw_selected_heatmap(choose_matrix = Group1and3.matrix, 
                                        annotation.class = factor(Group1and3.label))
 draw(Group1and3.all.heatmap, auto_adjust = FALSE, 
-     column_title = "BRCA WT TP53 vs BRCA TP53 multiple mutations", column_title_gp = gpar(fontsize = 16))
+     column_title = "BRCA WT TP53 vs BRCA TP53 Multiple Mutations", column_title_gp = gpar(fontsize = 16))
 draw(lgd, x = unit(1, "npc"), y = unit(1, "npc"), just = c("right", "top"))
 
 #Handle data Group1and4===============================================================
