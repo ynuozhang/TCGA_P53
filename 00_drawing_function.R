@@ -83,8 +83,10 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
                         qvalueCutoff  =  0.8,
                         universe = gene_all)
   
+  #View(kk.up)
   kegg_down_dt <- as.data.frame( kk.down )
   kegg_up_dt <- as.data.frame( kk.up )
+  #View(kegg_up_dt)
   down_kegg <- kegg_down_dt[ kegg_down_dt$pvalue < 0.05, ]
   up_kegg <- kegg_up_dt[ kegg_up_dt$pvalue < 0.05, ]
   
@@ -106,6 +108,11 @@ draw_kegg <- function(gene_up, gene_down, gene_all, title) {
     dat <- rbind(up_kegg, down_kegg)
   }
   
+  View(dat)
+  genes.enriched <- strsplit(dat$geneID, '/')[[1]]
+  genes.enriched <- bitr(genes.enriched,fromType="ENTREZID",toType=c("SYMBOL"),
+                  OrgDb = org.Hs.eg.db)
+  print(genes.enriched)
   dat$pvalue = -log10(dat$pvalue)
   dat$pvalue = dat$pvalue * dat$group
   dat = dat[ order(dat$pvalue, decreasing = F), ]

@@ -6,6 +6,7 @@ load('data/step2.Rdata')
 source('00_drawing_function.R')
 gene.df <- bitr(rownames(Group1and2.edgeR.filter),fromType="SYMBOL",toType=c("ENTREZID"),
                 OrgDb = org.Hs.eg.db)
+
 rownames(gene.df) <- gene.df[,1]
 gene.df <- gene.df[,-1, drop = FALSE]
 
